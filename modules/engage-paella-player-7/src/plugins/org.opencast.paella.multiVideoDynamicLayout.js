@@ -19,7 +19,10 @@
  *
  */
 
-import {VideoLayout} from 'paella-core';
+import { VideoLayout, CanvasButtonPosition } from 'paella-core';
+
+import defaultIconMaximize from '../icons/maximize.svg';
+import defaultIconMinimize from '../icons/minimize.svg';
 
 export default class MultiVideoDynamicLayout extends VideoLayout {
   get identifier() {
@@ -42,6 +45,48 @@ export default class MultiVideoDynamicLayout extends VideoLayout {
   getValidContentIds() {
     // Ignore content of streamData
     return this.validContentIds;
+  }
+
+  getVideoCanvasButtons(layoutStructure, content) {
+    const iconMaximize = this.player.getCustomPluginIcon(this.name,'iconMaximize') || defaultIconMaximize;
+    const iconMinimize = this.player.getCustomPluginIcon(this.name,'iconMinimize') || defaultIconMinimize;
+    const layoutData = () => this._currentVideos.find(lo => lo.content === content);
+    const isMaximized = () => layoutData().size > 50;
+    const buttons = [];
+
+    if (this._currentVideos.length > 1) {
+      if (!isMaximized()) {
+        buttons.push({
+          icon: iconMaximize,
+          position: CanvasButtonPosition.LEFT,
+          title: this.player.translate('Maximize video'),
+          ariaLabel: this.player.translate('Maximize video'),
+          name: this.name + ':iconMaximize',
+          click: async () => {
+            this._currentVideos.forEach(lo => {
+              lo.size = lo.content === content ? 75 : 25 / (this._currentVideos.length - 1);
+            });
+            await this.player.videoContainer.updateLayout();
+          }
+        });
+      } else {
+        buttons.push({
+          icon: iconMinimize,
+          position: CanvasButtonPosition.LEFT,
+          title: this.player.translate('Minimize video'),
+          ariaLabel: this.player.translate('Minimize video'),
+          name: this.name + ':iconMinimize',
+          click: async () => {
+            this._currentVideos.forEach(lo => {
+              lo.size = 100 / this._currentVideos.length;
+            });
+            await this.player.videoContainer.updateLayout();
+          }
+        });
+      }
+    }
+
+    return buttons;
   }
 
   getLayoutStructure(streamData) {
